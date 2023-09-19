@@ -184,7 +184,7 @@ func computeCodeownerThoroughReviewScore(scores []levelScore) int {
 	return score
 }
 
-func noarmalizeScore(score, max, level int) float64 {
+func normalizeScore(score, max, level int) float64 {
 	if max == 0 {
 		return float64(level)
 	}
@@ -204,7 +204,7 @@ func computeScore(scores []levelScore) (int, error) {
 	maxAdminBasicScore := maxScore.adminBasic * len(scores)
 	basicScore := computeNonAdminBasicScore(scores)
 	adminBasicScore := computeAdminBasicScore(scores)
-	score += noarmalizeScore(basicScore+adminBasicScore, maxBasicScore+maxAdminBasicScore, adminNonAdminBasicLevel)
+	score += normalizeScore(basicScore+adminBasicScore, maxBasicScore+maxAdminBasicScore, adminNonAdminBasicLevel)
 	if basicScore != maxBasicScore ||
 		adminBasicScore != maxAdminBasicScore {
 		return int(score), nil
@@ -215,7 +215,7 @@ func computeScore(scores []levelScore) (int, error) {
 	maxAdminReviewScore := maxScore.adminReview * len(scores)
 	reviewScore := computeNonAdminReviewScore(scores)
 	adminReviewScore := computeAdminReviewScore(scores)
-	score += noarmalizeScore(reviewScore+adminReviewScore, maxReviewScore+maxAdminReviewScore, adminNonAdminReviewLevel)
+	score += normalizeScore(reviewScore+adminReviewScore, maxReviewScore+maxAdminReviewScore, adminNonAdminReviewLevel)
 	if reviewScore != maxReviewScore ||
 		adminReviewScore != maxAdminReviewScore {
 		return int(score), nil
@@ -224,7 +224,7 @@ func computeScore(scores []levelScore) (int, error) {
 	// Third, check the use of non-admin context.
 	maxContextScore := maxScore.context * len(scores)
 	contextScore := computeNonAdminContextScore(scores)
-	score += noarmalizeScore(contextScore, maxContextScore, nonAdminContextLevel)
+	score += normalizeScore(contextScore, maxContextScore, nonAdminContextLevel)
 	if contextScore != maxContextScore {
 		return int(score), nil
 	}
@@ -235,7 +235,7 @@ func computeScore(scores []levelScore) (int, error) {
 	maxCodeownerReviewScore := maxScore.codeownerReview * len(scores)
 	thoroughReviewScore := computeNonAdminThoroughReviewScore(scores)
 	codeownerReviewScore := computeCodeownerThoroughReviewScore(scores)
-	score += noarmalizeScore(thoroughReviewScore+codeownerReviewScore, maxThoroughReviewScore+maxCodeownerReviewScore,
+	score += normalizeScore(thoroughReviewScore+codeownerReviewScore, maxThoroughReviewScore+maxCodeownerReviewScore,
 		nonAdminThoroughReviewLevel)
 	if thoroughReviewScore != maxThoroughReviewScore {
 		return int(score), nil
@@ -246,7 +246,7 @@ func computeScore(scores []levelScore) (int, error) {
 	// https://github.com/ossf/scorecard/issues/1027, so we may remove it.
 	maxAdminThoroughReviewScore := maxScore.adminThoroughReview * len(scores)
 	adminThoroughReviewScore := computeAdminThoroughReviewScore(scores)
-	score += noarmalizeScore(adminThoroughReviewScore, maxAdminThoroughReviewScore, adminThoroughReviewLevel)
+	score += normalizeScore(adminThoroughReviewScore, maxAdminThoroughReviewScore, adminThoroughReviewLevel)
 	if adminThoroughReviewScore != maxAdminThoroughReviewScore {
 		return int(score), nil
 	}
