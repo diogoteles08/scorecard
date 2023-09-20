@@ -50,11 +50,12 @@ type levelScore struct {
 	maxes  scoresInfo // Maximum possible score for a branch.
 }
 
-// Evaluates if Scorecard is being run with an administrator token
+// Evaluates if Scorecard is being run with an administrator token.
 func isUserAdmin(branchProtectionData *clients.BranchRef) bool {
 	// When Scorecard is run without the admin token, Github retrieves both of the following fields as nil,
-	// so we're using them to evaluate if Scorecard is run using admin token or not
-	return branchProtectionData.BranchProtectionRule.CheckRules.UpToDateBeforeMerge != nil || branchProtectionData.BranchProtectionRule.RequireLastPushApproval != nil
+	// so we're using them to evaluate if Scorecard is run using admin token or not.
+	return branchProtectionData.BranchProtectionRule.CheckRules.UpToDateBeforeMerge != nil ||
+		branchProtectionData.BranchProtectionRule.RequireLastPushApproval != nil
 }
 
 // BranchProtection runs Branch-Protection check.
@@ -112,9 +113,11 @@ func BranchProtection(name string, dl checker.DetailLogger,
 	}
 }
 
-func sumUpScoreForTier(tier int, scores []levelScore, dl checker.DetailLogger) int {
+func sumUpScoreForTier(tier int, scoresData []levelScore, dl checker.DetailLogger) int {
 	sum := 0
-	for _, score := range scores {
+	// iterating over index because iterating over values would copy whole scructure
+	for i := range scoresData {
+		score := scoresData[i]
 		switch tier {
 		case 1:
 			sum += score.scores.basic + score.scores.adminBasic
@@ -127,7 +130,8 @@ func sumUpScoreForTier(tier int, scores []levelScore, dl checker.DetailLogger) i
 		case 5:
 			sum += score.scores.adminThoroughReview
 		default:
-			debug(dl, true, "Function sumUpScoreForTier called with the invalid parameter: '%d' -- BranchProtection score won't be accurate.", tier)
+			debug(dl, true, "Function sumUpScoreForTier called with the invalid parameter:"+
+				"'%d' -- BranchProtection score won't be accurate.", tier)
 		}
 	}
 	return sum
@@ -351,7 +355,8 @@ func adminReviewProtection(branch *clients.BranchRef, dl checker.DetailLogger) (
 	}
 
 	if isUserAdmin(branch) {
-		// If Scorecard is run with admin token, we can interprete GitHub's response to say if the branch requires PRs prior to code changes
+		// If Scorecard is run with admin token, we can interprete GitHub's response to say
+		// if the branch requires PRs prior to code changes.
 		max++
 		if branch.BranchProtectionRule.RequiredPullRequestReviews.RequiredApprovingReviewCount != nil {
 			score++
@@ -396,16 +401,20 @@ func nonAdminThoroughReviewProtection(branch *clients.BranchRef, dl checker.Deta
 	max++
 
 	// On this first check we exclude the case of PRs don't being required, covered on adminReviewProtection function
-	if !(isUserAdmin(branch) && branch.BranchProtectionRule.RequiredPullRequestReviews.RequiredApprovingReviewCount == nil) {
-		// If not running as admin, the nil value can both mean that no reviews are required or no PR are required, so here we assume no reviews are required
-		if (!isUserAdmin(branch) && branch.BranchProtectionRule.RequiredPullRequestReviews.RequiredApprovingReviewCount == nil) ||
-			*branch.BranchProtectionRule.RequiredPullRequestReviews.RequiredApprovingReviewCount == 0 {
+	if !(isUserAdmin(branch) &&
+		branch.BranchProtectionRule.RequiredPullRequestReviews.RequiredApprovingReviewCount == nil) {
+		switch {
+		// If not running as admin, the nil value can both mean that no reviews are required or no PR are required,
+		// so here we assume no reviews are required.
+		case (!isUserAdmin(branch) &&
+			branch.BranchProtectionRule.RequiredPullRequestReviews.RequiredApprovingReviewCount == nil) ||
+			*branch.BranchProtectionRule.RequiredPullRequestReviews.RequiredApprovingReviewCount == 0:
 			warn(dl, log, "number of required reviewers is 0 on branch '%s'", *branch.Name)
-		} else if *branch.BranchProtectionRule.RequiredPullRequestReviews.RequiredApprovingReviewCount >= minReviews {
+		case *branch.BranchProtectionRule.RequiredPullRequestReviews.RequiredApprovingReviewCount >= minReviews:
 			info(dl, log, "number of required reviewers is %d on branch '%s'",
 				*branch.BranchProtectionRule.RequiredPullRequestReviews.RequiredApprovingReviewCount, *branch.Name)
 			score++
-		} else {
+		default:
 			warn(dl, log, "number of required reviewers is only %d on branch '%s'",
 				*branch.BranchProtectionRule.RequiredPullRequestReviews.RequiredApprovingReviewCount, *branch.Name)
 		}
